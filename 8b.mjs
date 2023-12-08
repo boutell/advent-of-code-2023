@@ -26,34 +26,17 @@ for (const node of nodes) {
   map.set(node.name, node);
 }
 
-const ghosts = nodes.filter(node => node.start).map(node => ({
-  node,
-  finished: false,
-  starts: []
-}));
-
+const heres = nodes.filter(node => node.start);
+const visited = heres.map(here => new Set([ here.name ]));
+console.log(heres.length);
 let n = 0;
-let finished = 0;
-outer: while (true) {
-  for (const ghost of ghosts) {
-    if (ghost.finished) {
-      continue;
-    }
-    console.log(ghost.node.name);
-    if (ghost.node.end) {
-      console.log('!!!');
-      ghost.ends.push(n);
-    }
-    const next = ghost.node[steps[n % steps.length]];
-    ghost.node = map.get(next);
-    if (ghost.visited.has(next)) {
-      ghost.finished = true;
-      finished++;
-      if (finished === ghosts.length) {
-        break outer;
-      }
-    }
-    ghost.visited.add(next);
+const modulus = steps.length;
+const count = heres.length;
+
+while (heres.find(node => !node.end)) {
+  const step = steps[n % modulus];
+  for (let i = 0; (i < count); i++) {
+    heres[i] = map.get(heres[i][step]);
   }
   n++;
   if (!(n % 1000000)) {
@@ -62,4 +45,9 @@ outer: while (true) {
 }
 console.log(n);
 
-// console.log(ghosts);
+function print(heres) {
+  console.log(heres[0].name);
+  // for (const here of heres) {
+  //   console.log(here.name);
+  // }
+}
