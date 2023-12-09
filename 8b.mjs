@@ -35,7 +35,6 @@ const nodes = lines.slice(1).map(line => {
     name,
     L,
     R,
-    zees: new Set(),
     start: name.endsWith('A'),
     end: name.endsWith('Z'),
   };
@@ -49,6 +48,9 @@ for (const node of nodes) {
 const ghosts = nodes.filter(node => node.start).map((node, i) => ({
   i,
   node,
+  looped: false,
+  zees: new Set(),
+  last: false,
   visited: new Set([ key(node.name, 0) ])
 }));
 
@@ -56,11 +58,20 @@ let n = 0;
 const modulus = steps.length;
 
 while (true) {
-  const count = ghosts.reduce((a, { node }) => a + (node.end ? 1 : 0), 0);
-  if (count === ghosts.length) {
+  const offset = n % modulus;
+  for (const ghost of ghosts) {
+    if (ghost.node.end) {
+      const k = key(ghost.node.name, offset);
+      if (!ghost.zees.has(k)) {
+        console.log(`${ghost.i} has a zee at ${k} (${n})`);
+        ghost.zees.add(k);
+        ghost.endsAt = n;
+      }
+    }
+  }
+  if (!ghosts.find(ghost => !ghost.endsAt)) {
     break;
   }
-  const offset = n % modulus;
   const step = steps[offset];
   for (const ghost of ghosts) {
     ghost.node = map.get(ghost.node[step]);
@@ -79,14 +90,22 @@ while (true) {
     console.log(n);
   }
 }
-console.log(n);
-
-function print(heres) {
-  console.log(heres[0].name);
-  // for (const here of heres) {
-  //   console.log(here.name);
-  // }
+let ends = ghosts.map(({ endsAt }) => endsAt);
+console.log(ends);
+// Compute LCM of ends
+while (ends.length > 1) {
+  let i = 0;
+  let sum = 0;
+  while (true) {
+    sum += ends[0];
+    if (!(sum % ends[1])) {
+      ends = [ sum, ...ends.slice(2) ];
+      console.log('finished LCM');
+      break;
+    }
+  }
 }
+console.log(ends[0]);
 
 function key(a, b) {
   return `${a}:${b}`;
