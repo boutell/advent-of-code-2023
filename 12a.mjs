@@ -35,21 +35,12 @@ function valid(puzzle, series) {
       return false;
     }
   }
-  let copy = series.join('');
-  for (const run of puzzle.runs) {
-    const rs = '#'.repeat(run);
-    const rp = '!'.repeat(run);
-    if (copy === rs) {
-      copy = rp;
-    } else if (copy.startsWith(`${rs}.`)) {
-      copy = rp + copy.substring(run + 1);
-    } else if (copy.endsWith(`.${rs}`)) {
-      copy = copy.substring(0, copy.length - run) + rp;
-    } else if (copy.includes(`.${rs}.`)) {
-      copy = copy.replace(`.${rs}.`, `.${rp}.`);
-    } else {
-      return false;
-    }
+  const seriesRuns = series.join('').split('.').filter(s => s.length > 0);
+  if (seriesRuns.length !== puzzle.runs.length) {
+    return false;
+  }
+  if (puzzle.runs.find((r, i) => r !== seriesRuns[i].length)) {
+    return false;
   }
   return true;
 }
