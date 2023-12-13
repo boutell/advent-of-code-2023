@@ -24,46 +24,50 @@ function solvePuzzle(puzzle) {
   const ones = sum(runs);
   const zeroes = length - ones;
   let solutions = 0;
+  const series = [];
   for (let i = 0; (i <= zeroes - (runs.length - 1)); i++) {
-    const series = [];
+    let io = 0;
     for (let j = 0; (j < i); j++) {
-      series.push('.');
+      series[io++] = '.';
     }
     for (let j = 0; (j < runs[0]); j++) {
-      series.push('#');
+      series[io++] = '#';
     }
-    solutions += solve(series, runs.slice(1));
+    solutions += solve(io, 1);
   }
   return solutions;
-  function solve(series, runs) {
-    if (series.length + sum(runs) + runs.length > puzzle.series.length) {
+  function solve(o, r) {
+    let s = 0;
+    for (let i = r; (i < runs.length); i++) {
+      s += runs[i];
+    }
+    const rl = runs.length - r;
+    if (o + s + rl > puzzle.series.length) {
       return 0;
     }
-    if (!runs.length) {
-      if (series.length < puzzle.series.length) {
-        for (let i = series.length; (i < puzzle.series.length); i++) {
-          series[i] = '.';
-        }
+    if (!rl) {
+      while (o < puzzle.series.length) {
+        series[o++] = '.';
       }
-      if (series.length !== puzzle.series.length) {
+      if (o !== puzzle.series.length) {
         return 0;
       }
-      if (!matchingSoFar(puzzle.series, series)) {
+      if (!matchingSoFar(puzzle.series, series, o)) {
         return 0;
       }
       return 1;
     }
     let solutions = 0;
-    for (let i = 1; (i <= zeroes - (runs.length - 1)); i++) {
-      const next = [...series];
+    for (let i = 1; (i <= zeroes - (rl - 1)); i++) {
+      let io = o;
       for (let j = 0; (j < i); j++) {
-        next.push('.');
+        series[io++] = '.';
       }
-      for (let j = 0; (j < runs[0]); j++) {
-        next.push('#');
+      for (let j = 0; (j < runs[r]); j++) {
+        series[io++] = '#';
       }
-      if (matchingSoFar(puzzle.series, next)) {
-        solutions += solve(next, runs.slice(1));
+      if (matchingSoFar(puzzle.series, series, io)) {
+        solutions += solve(io, r + 1);
       }
     }
     return solutions;
@@ -85,8 +89,8 @@ function sum(a) {
   return a.reduce((a, v) => a + v, 0);
 }
 
-function matchingSoFar(s1, s2) {
-  for (let i = 0; (i < s2.length); i++) {
+function matchingSoFar(s1, s2, n) {
+  for (let i = 0; (i < n); i++) {
     if ((s1[i] !== '?') && (s1[i] !== s2[i])) {
       return false;
     }
