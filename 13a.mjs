@@ -10,10 +10,10 @@ let sum = 0;
 for (const pattern of patterns) {
   const solution = solve(pattern);
   console.log(solution);
-  if (solve.axis === 'x') {
-    sum += solve.value;
+  if (solution.axis === 'x') {
+    sum += solution.value;
   } else {
-    sum += solve.value * 100;
+    sum += solution.value * 100;
   }
 }
 console.log(sum);
@@ -43,8 +43,11 @@ function solveX(pattern) {
 function solveY(pattern) {
   console.log(pattern.height);
   outer: for (let y = 1; (y < pattern.height); y++) {
-    for (let i = 0; (i < Math.min(y, pattern.height - y)); i++) {
+    for (let i = 0; (i <= Math.min(y, pattern.height - y)); i++) {
       for (let x = 0; (x < pattern.width); x++) {
+        if (y === 3) {
+          console.log(y, i, x);
+        }
         if (pattern.getValue(x, y - i) !== pattern.getValue(x, y + i - 1)) {
           continue outer;
         }
