@@ -10,7 +10,7 @@
 
 import { readFileSync } from 'fs';
 import Grid from './lib/grid.mjs';
-import memoize from './lib/memoize.mjs';
+import Heap from './lib/heap.mjs';
 import key from './lib/key.mjs';
 
 const input = readFileSync('/dev/stdin', 'utf8');
@@ -34,6 +34,7 @@ const dirs = [
   }
 ];
 const grid = new Grid(lines);
+const visited = new Grid(structuredClone(lines));
 const fx = grid.width - 1;
 const fy = grid.height - 1;
 
@@ -43,115 +44,85 @@ for (const cell of grid.cells()) {
 
 let nextPathId = 0;
 
-let paths = [
-  {
-    x: 0,
-    y: 0,
-    dir: 0,
-    steps: 0,
-    seen: new Set(),
-    cost: 0,
-    id: nextPathId++
+const start = {
+  x: 0,
+  y: 0,
+  dir: 0,
+  steps: 0,
+  seen: new Set(),
+  cost: 0
+};
+
+const paths = new Heap((a, b) => {
+  if (a && !b) {
+    return a;
   }
-];
+  if (b && !a) {
+    return b;
+  }
+  if (!(a || b)) {
+    return 0;
+  }
+  return a.cost - b.cost;
+});
+
+paths.insert(start);
 
 const best = new Map();
 
-let min = testDrive();
-console.log(`min is ${min}`);
-
 console.log(solve());
 
-function testDrive() {
-  let x = 0;
-  let y = 0;
-  let cost = 0;
+function solve() {
+  let n = 0;
   while (true) {
-    if ((x === fx) && (y === fy)) {
-      return cost;
+    // console.log(paths.length);
+    const path = paths.remove();
+    // console.log(`Best estimate: ${path.cost} ${estimate(path)}`);
+    if (estimate(path) === 0) {
+      return path.cost;
     }
-    x += 1;
-    cost += grid.getValue(x, y);
-    y += 1;
-    cost += grid.getValue(x, y);
+    visited.setValue(path.x, path.y, '*');
+    n++;
+    if (!(n % 1000)) {
+      console.log(paths.data.length);
+      visited.print();
+    }
+    const moves = [];
+    if (path.steps !== 3) {
+      moves.push(path.dir);
+    }
+    const left = (path.dir + 4 - 1) % 4;
+    const right = (path.dir + 1) % 4;
+    moves.push(left);
+    moves.push(right);
+    for (const move of moves) {
+      const cell = grid.get(path.x, path.y).step(dirs[move].xd, dirs[move].yd);
+      if (!cell) {
+        // Out of bounds
+        continue;
+      }
+      const s = (move === path.dir) ? (path.steps + 1) : 0;
+      const cost = path.cost + cell.value;
+      const k = key(cell.x, cell.y, move, s);
+      if (path.seen.has(k)) {
+        continue;
+      }
+      const seen = new Set(path.seen);
+      seen.add(k);
+      paths.insert({
+        x: cell.x,
+        y: cell.y,
+        dir: move,
+        steps: s,
+        cost,
+        seen
+      });
+    }
   }
 }
 
-function solve() {
-  for (let n = 0; (n < 1000); n++) {
-    console.log(n);
-    const newPaths = [];
-    if (min !== false) {
-      console.log(paths.length);
-    }
-    for (const p of paths) {
-      const minCost = Math.abs(fx - p.x) + Math.abs(fy - p.y);
-      if ((min !== false) && (p.cost + minCost >= min)) {
-        p.dead = true;
-        continue;
-      }
-      const k = key(p.x, p.y, p.dir, p.steps);
-      const b = best.get(k);
-      if (b && (b.id !== p.id) && (b.cost <= p.cost)) {
-        p.dead = true;
-        continue;
-      }
-      best.set(k, p.cost);
-      const moves = [];
-      if (p.steps !== 3) {
-        moves.push(p.dir);
-      }
-      const left = (p.dir + 4 - 1) % 4;
-      const right = (p.dir + 1) % 4;
-      moves.push(left);
-      moves.push(right);
-      for (let i = 0; (i < moves.length); i++) {
-        const move = moves[i];
-        const cell = grid.get(p.x, p.y).step(dirs[move].xd, dirs[move].yd);
-        if (!cell) {
-          // Out of bounds
-          continue;
-        }
-        if ((cell.x === (grid.width - 1)) && (cell.y === (grid.height - 1))) {
-          const win = p.cost + cell.value;
-          if ((min === false) || (win < min)) {
-            min = win;
-            console.log('* ' + min);
-          }
-        }
-        const s = (move === p.dir) ? (p.steps + 1) : 0;
-        const k = key(cell.x, cell.y, move, s);
-        if (p.seen.has(k)) {
-          continue;
-        }
-        const cost = p.cost + cell.value;
-        const seen = (i > 0) ? new Set(p.seen) : p.seen;
-        seen.add(k);
-        let np = (i > 0) ? {} : p;
-        np.x = cell.x;
-        np.y = cell.y;
-        np.dir = move;
-        np.steps = s;
-        np.cost = cost;
-        np.seen = seen;
-        if (i > 0) {
-          const minCost = Math.abs(fx - np.x) + Math.abs(fy - np.y);
-          if ((min === false) || (np.cost + minCost < min)) {
-            np.id = nextPathId++;
-            newPaths.push(np);
-          }
-        }
-      }
-    }
-    console.log('before:', paths.length);
-    paths = paths.filter(path => !path.dead);
-    console.log('after:', paths.length);
-    for (const p of newPaths) {
-      paths.push(p);
-    }
-    console.log('after birth:', paths.length);
-  }
-  return min;
+function estimate(path) {
+  return Math.abs(fx - path.x) + Math.abs(fy - path.y);
 }
 
 function print(path) {
