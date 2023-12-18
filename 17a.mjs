@@ -1,12 +1,4 @@
-// I need a breadth first search so that I'm advancing
-// one step on all paths at once, e.g. I'll find the true
-// solution first and when I get there I'll know it's
-// optimal right away.
-//
-// So I have to start building an array of paths and advancing
-// on them, and if I hit an x + y + dir + step combo I've seen
-// before I can immediately discard it because it can't be more
-// optimal than the earlier one.
+// A* solution
 
 import { readFileSync } from 'fs';
 import Grid from './lib/grid.mjs';
@@ -33,13 +25,24 @@ const dirs = [
     yd: 0
   }
 ];
-const grid = new Grid(lines);
+const grid = new Grid(structuredClone(lines));
 const visited = new Grid(structuredClone(lines));
 const fx = grid.width - 1;
 const fy = grid.height - 1;
 
 for (const cell of grid.cells()) {
-  cell.value = +cell.value;
+  const cost = +cell.value;
+  const map = new Map();
+  for (let d = 0; (d < 4); d++) {
+    for (let s = 1; (s < 4); s++) {
+      const k = key(d, s);
+      map.set(k, Number.MAX_VALUE);
+    }
+  }
+  cell.value = {
+    cost,
+    best: map
+  };
 }
 
 let nextPathId = 0;
@@ -49,8 +52,8 @@ const start = {
   y: 0,
   dir: 0,
   steps: 0,
-  seen: new Set(),
-  cost: 0
+  cost: 0,
+  route: []
 };
 
 const paths = new Heap((a, b) => {
@@ -68,17 +71,24 @@ const paths = new Heap((a, b) => {
 
 paths.insert(start);
 
-const best = new Map();
-
 console.log(solve());
 
 function solve() {
   let n = 0;
   while (true) {
-    // console.log(paths.length);
     const path = paths.remove();
     // console.log(`Best estimate: ${path.cost} ${estimate(path)}`);
     if (estimate(path) === 0) {
+      const result = new Grid(structuredClone(lines));
+      let cost = 0;
+      for (const step of path.route) {
+        result.setValue(step[0], step[1], 'x');
+        const c = grid.getValue(step[0], step[1]).cost;
+        console.log(c);
+        cost += c;
+      }
+      console.log('total: ' + cost);
+      result.print();
       return path.cost;
     }
     visited.setValue(path.x, path.y, '*');
@@ -101,22 +111,21 @@ function solve() {
         // Out of bounds
         continue;
       }
-      const s = (move === path.dir) ? (path.steps + 1) : 0;
-      const cost = path.cost + cell.value;
-      const k = key(cell.x, cell.y, move, s);
-      if (path.seen.has(k)) {
-        continue;
+      const s = (move === path.dir) ? (path.steps + 1) : 1;
+      const cost = path.cost + cell.value.cost;
+      const k = key(move, s);
+      if (cost < cell.value.best.get(k)) {
+        cell.value.best.set(k, cost);
+        const route = [...path.route, [ cell.x, cell.y ] ];
+        paths.insert({
+          x: cell.x,
+          y: cell.y,
+          dir: move,
+          steps: s,
+          cost,
+          route
+        });
       }
-      const seen = new Set(path.seen);
-      seen.add(k);
-      paths.insert({
-        x: cell.x,
-        y: cell.y,
-        dir: move,
-        steps: s,
-        cost,
-        seen
-      });
     }
   }
 }
