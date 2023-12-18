@@ -29,24 +29,27 @@ for (const cell of grid.cells()) {
   cell.value = +cell.value;
 }
 
-const optimizeFrom = memoize(optimizeFromBody);
-const [path, cost] = optimizeFrom(0, 0, 0, 0, new Set());
-const dirArrows = [
-  '^',
-  '>',
-  'v',
-  '<'
-];
+const cache = new Map();
 
-console.log(cost, path.size);
-for (const move of path) {
-  const [ x, y, dir, steps ] = JSON.parse(move);
-  grid.setValue(x, y, dirArrows[dir]);
+const cost = optimizeFrom(0, 0, 0, 0, new Set());
+console.log(cost);
+
+function optimizeFrom(x, y, dir, steps, path) {
+  const k = key(x, y, dir, steps);
+  if (cache.has(k)) {
+    return cache.get(k);
+  }
+  const result = optimizeFromBody(x, y, dir, steps, path);
+  cache.set(k, result);
+  return result;
 }
-grid.print();
 
 function optimizeFromBody(x, y, dir, steps, path) {
+  if (path.size >= 1000) {
+    return Number.MAX_VALUE;
+  }
   path.add(key(x, y, dir, steps));
+  // print(path);
   const moves = [];
   if (steps !== 3) {
     moves.push(dir);
@@ -55,8 +58,7 @@ function optimizeFromBody(x, y, dir, steps, path) {
   const right = (dir + 1) % 4;
   moves.push(left);
   moves.push(right);
-  let min = false;
-  let minPath;
+  let min = Number.MAX_VALUE;
   for (const move of moves) {
     let moveValue;
     const cell = grid.get(x, y).step(dirs[move].xd, dirs[move].yd);
@@ -67,26 +69,26 @@ function optimizeFromBody(x, y, dir, steps, path) {
     const s = (move == dir) ? (steps + 1) : 0;
     const k = key(cell.x, cell.y, move, s);
     if (path.has(k)) {
-      continue;
-    }
-    let p;
-    if ((cell.x === grid.width - 1) && (cell.y === grid.height - 1)) {
-      p = new Set(path);
-      p.add(k);
+      moveValue = Number.MAX_VALUE;
+    } else if ((cell.x === grid.width - 1) && (cell.y === grid.height - 1)) {
       moveValue = cell.value;
     } else {
-      [ p, moveValue ] = optimizeFrom(cell.x, cell.y, move, s, new Set(path));
+      moveValue = optimizeFrom(cell.x, cell.y, move, s, new Set(path));
       moveValue += cell.value;
     }
-    if ((min === false) || (moveValue < min)) {
+    if (moveValue < min) {
       min = moveValue;
-      minPath = p;
     }
   }
+  return min;
+}
 
-  if (min === false) {
-    // All paths blocked
-    return [ , Number.MAX_VALUE ];
+function print(path) {
+  console.log('\n');
+  const grid = new Grid(lines);
+  for (const p of path) {
+    const [ x, y ] = JSON.parse(p);
+    grid.setValue(x, y, '*');
   }
-  return [ minPath, min ];
+  grid.print();
 }
