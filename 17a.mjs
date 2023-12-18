@@ -34,6 +34,8 @@ const dirs = [
   }
 ];
 const grid = new Grid(lines);
+const fx = grid.width - 1;
+const fy = grid.height - 1;
 
 for (const cell of grid.cells()) {
   cell.value = +cell.value;
@@ -55,12 +57,27 @@ let paths = [
 
 const best = new Map();
 
+let min = testDrive();
+console.log(`min is ${min}`);
+
 console.log(solve());
 
+function testDrive() {
+  let x = 0;
+  let y = 0;
+  let cost = 0;
+  while (true) {
+    if ((x === fx) && (y === fy)) {
+      return cost;
+    }
+    x += 1;
+    cost += grid.getValue(x, y);
+    y += 1;
+    cost += grid.getValue(x, y);
+  }
+}
+
 function solve() {
-  const fx = grid.width - 1;
-  const fy = grid.height - 1;
-  let min = false;
   for (let n = 0; (n < 1000); n++) {
     console.log(n);
     const newPaths = [];
