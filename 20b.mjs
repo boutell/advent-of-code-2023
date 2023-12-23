@@ -22,13 +22,13 @@ for (const m of list) {
   }
 }
 for (const m of list) {
-  m.senders = m.senders || [];
+  m.received = [];
 }
 for (const m of list) {
-  m.sent = false;
   m.dest = m.dest.map(name => list.find(m => m.name === name));
   for (const m2 of m.dest) {
-    m2.senders.push(m);
+    m2.received.push(false);
+    m.receiverIndex = m2.received.length - 1;
   }
 }
 console.log(list);
@@ -126,10 +126,9 @@ function solve() {
         }
       } else if (m.type === '&') {
         let next = false;
-        for (const sender of m.senders) {
-          if (!sender.sent) {
-            next = true;
-          }
+        m.received[pulse.receiverIndex] = pulse.value;
+        if (m.received.includes(false)) {
+          next = true;
         }
         send(m, next);
       }
@@ -139,12 +138,11 @@ function solve() {
 }
 
 function send(m, value) {
-  // This might be a bug
-  m.sent = value;
   for (const d of m.dest) {
     const pulse = {
       dest: d,
-      value
+      value,
+      receiverIndex: m.receiverIndex
     };
     if (last) {
       last.next = pulse;
