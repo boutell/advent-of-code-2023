@@ -1,4 +1,6 @@
 import { readFileSync } from 'fs';
+import Queue from './lib/queue.mjs';
+
 const input = readFileSync('/dev/stdin', 'utf8');
 const lines = input.split('\n').filter(line => line.length > 0);
 const list = lines.map(parseModule);
@@ -26,10 +28,10 @@ for (const m of list) {
 }
 for (const m of list) {
   m.dest = m.dest.map(name => list.find(m => m.name === name));
-  for (const m2 of m.dest) {
+  m.dest = m.dest.map(m2 => {
     m2.received.push(false);
-    m.receiverIndex = m2.received.length - 1;
-  }
+    return [ m2, m2.received.length - 1 ];
+  });
 }
 console.log(list);
 
@@ -85,8 +87,7 @@ console.log(list);
 
 let sentHigh = 0;
 let sentLow = 0;
-
-let first, last;
+let pulses;
 
 console.log(solve());
 
@@ -100,14 +101,12 @@ function solve() {
     }
     i++;
 
-    first = null;
-    last = null;
+    pulses = new Queue();
 
     send(button, false);
     
-    while (first) {
-      const pulse = first;
-      first = pulse.next;
+    while (!pulses.empty()) {
+      const pulse = pulses.dequeue();
       let m = pulse.dest;
       const value = pulse.value;
       if (value) {
@@ -134,24 +133,17 @@ function solve() {
         send(m, next);
       }
     }
-    last = null;
   }
 }
 
 function send(m, value) {
-  for (const d of m.dest) {
+  for (const [ d, index ] of m.dest) {
     const pulse = {
       dest: d,
       value,
-      receiverIndex: m.receiverIndex
+      receiverIndex: index
     };
-    if (last) {
-      last.next = pulse;
-    }
-    last = pulse;
-    if (!first) {
-      first = pulse;
-    }
+    pulses.enqueue(pulse);
   }
 }
 

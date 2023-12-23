@@ -1,2 +1,37 @@
 3.976s
 2.4s
+
+With all the optimizations:
+
+14740168 45407559
+
+real	0m2.453s
+user	0m2.448s
+sys	0m0.045s
+
+With the new queue class (why is this better?)
+
+1000000
+14740168 45407559
+
+real	0m2.106s
+user	0m2.129s
+sys	0m0.029s
+
+With the receiver index stuff finally debugged:
+
+1000000
+17593211 42594830 (correct)
+
+real	0m2.231s
+user	0m2.239s
+sys	0m0.041s
+
+
+With no optimizations (correct):
+
+17593211 42594830
+
+real	0m4.061s
+user	0m4.061s
+sys	0m0.032s
