@@ -6,12 +6,14 @@ const BROADCASTER: i32 = 1;
 const FLIPFLOP: i32 = 2;
 const CONJUNCTION: i32 = 3;
 
+#[derive(Clone)]
 struct Receiver {
   name: String,
   module_index: usize,
   sender_index: usize
 }
 
+#[derive(Clone)]
 struct Module {
   name: String,
   t: i32,
@@ -34,7 +36,7 @@ fn main() {
     .iter()
     .map(parse_module)
     .collect();
-  let mut newModules: Vec<Module> = vec![];
+  let mut new_modules: Vec<Module> = vec![];
 
   for m in modules.iter() {
     for r in m.receivers.iter() {
@@ -46,42 +48,48 @@ fn main() {
           receivers: vec![],
           received: vec![]
         };
-        newModules.push(m2);
+        new_modules.push(m2);
       }
     }
   }
 
-  modules.append(&mut newModules);
+  modules.append(&mut new_modules);
 
-  for m in modules.iter() {
+  let copy = modules.clone();
+
+  for m in copy.iter() {
     for m2 in modules.iter_mut() {
       if m.receivers.iter().any(|r| r.name == m2.name) {
-        m2.received.push(false)
+        m2.received.push(false);
       }
     }
   }
 
-  let receiverCounts = HashMap<String, int32>::new();
-  for m in modules.iter() {
-    receiverCounts.insert(m.name, 0);
-  }
+  let mut receiver_counts = HashMap::new();
 
   for m in modules.iter_mut() {
-    let n = 0;
-    for m2 in modules.iter() {
+    let mut n = 0;
+    for m2 in copy.iter() {
       if m.receivers.iter().any(|r| r.name == m2.name) {
         let receiver = m.receivers.iter_mut().find(|r| r.name == m2.name);
         match receiver {
           Some(receiver) => {
-            let si = receiverCounts.get(m2.name);
-            receiverCounts.set(m2.name, si + 1);
             receiver.module_index = n;
-            receiver.sender_index = si;
+            let si = receiver_counts.get(&m2.name);
+            match si {
+              Some(si) => {
+                receiver.sender_index = *si;
+                receiver_counts.insert(m2.name.clone(), si + 1);
+              },
+              None => {
+                receiver_counts.insert(m2.name.clone(), 1);
+              }
+            }
           },
           None => panic!("Unable to find receiver")
         };
       }
-      n++;
+      n += 1;
     }
   }
 
