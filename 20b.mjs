@@ -27,7 +27,9 @@ for (const m of list) {
 for (const m of list) {
   m.sent = false;
   m.dest = m.dest.map(name => list.find(m => m.name === name));
-  m.senders.push(m);
+  for (const m2 of m.dest) {
+    m2.senders.push(m);
+  }
 }
 console.log(list);
 
@@ -84,7 +86,7 @@ console.log(list);
 let sentHigh = 0;
 let sentLow = 0;
 
-let pulses;
+let first, last;
 
 console.log(solve());
 
@@ -97,12 +99,14 @@ function solve() {
     }
     i++;
 
-    pulses = [];
+    first = null;
+    last = null;
 
     send(button, false);
     
-    while (pulses.length > 0) {
-      const pulse = pulses.shift();
+    while (first) {
+      const pulse = first;
+      first = pulse.next;
       let m = pulse.dest;
       const value = pulse.value;
       if (value) {
@@ -130,16 +134,25 @@ function solve() {
         send(m, next);
       }
     }
+    last = null;
   }
 }
 
 function send(m, value) {
+  // This might be a bug
   m.sent = value;
   for (const d of m.dest) {
-    pulses.push({
+    const pulse = {
       dest: d,
       value
-    });
+    };
+    if (last) {
+      last.next = pulse;
+    }
+    last = pulse;
+    if (!first) {
+      first = pulse;
+    }
   }
 }
 
@@ -150,7 +163,6 @@ function parseModule(s) {
     type,
     name,
     state: false,
-    memory: new Map(),
     dest: dest.split(', ')
   }
 }
