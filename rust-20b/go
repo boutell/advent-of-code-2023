@@ -1,0 +1,3 @@
+#!/bin/bash
+
+clear && RUST_BACKTRACE=1 cargo run < ../20-ex.txt

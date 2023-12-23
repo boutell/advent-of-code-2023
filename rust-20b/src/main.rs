@@ -7,14 +7,15 @@ const CONJUNCTION: i32 = 3;
 
 struct Receiver {
   name: String,
-  module_index: i32,
-  sender_index: i32
+  module_index: usize,
+  sender_index: usize
 }
 
 struct Module {
   name: String,
   t: i32,
-  receivers: Vec<Receiver>
+  receivers: Vec<Receiver>,
+  received: Vec<bool>
 }
 
 fn read_lines(filename: &str) -> Vec<String> {
@@ -26,22 +27,62 @@ fn read_lines(filename: &str) -> Vec<String> {
 }
 
 fn main() {
-  let lines = read_lines("/dev/stdin");
-  let modules: Vec<Module> = lines
+  let mut lines = read_lines("/dev/stdin");
+  lines.push("button -> broadcaster".to_owned());
+  let mut modules: Vec<Module> = lines
     .iter()
     .map(parse_module)
     .collect();
+  let mut newModules: Vec<Module> = vec![];
+
+  for m in modules.iter() {
+    for r in m.receivers.iter() {
+      // he introduces rando modules sometimes
+      if !modules.iter().any(|m| m.name == r.name) {
+        let m2 = Module {
+          name: r.name.clone(),
+          t: BROADCASTER,
+          receivers: vec![],
+          received: vec![]
+        };
+        newModules.push(m2);
+      }
+    }
+  }
+
+  modules.append(&mut newModules);
+
+  let mut i = 0;
+  while i < modules.len() {
+    let mut j = 0;
+    while j < modules.len() {
+      if i == j {
+        continue;
+      }
+      let m = &mut modules[i];
+      let m2 = &mut modules[j];
+      let receiver = m.receivers.iter_mut().find(|r| r.name == m2.name);
+      match receiver {
+        Some(receiver) => {
+          receiver.module_index = j;
+          m2.received.push(false);
+          receiver.sender_index = m2.received.len() - 1;
+        },
+        None => panic!("Unable to find receiver")
+      };
+      j = j + 1;
+    }
+    i = i + 1;
+  }
+
   for module in modules.iter() {
-    println!(
-      "Name: {} Type: {} Receivers: {}",
+    println!("Module Name: {} Type: {}",
       module.name,
-      module.t,
-      module.receivers
-        .iter()
-        .map(get_receiver_name)
-        .collect::<Vec<String>>()
-        .join(":")
+      module.t
     );
+    for receiver in module.receivers.iter() {
+      describe_receiver(&receiver);
+    }
   }
 }
 
@@ -64,18 +105,21 @@ fn parse_module(line: &String) -> Module {
   Module {
     name: caps["name"].to_owned(),
     t,
-    receivers
+    receivers,
+    received: vec![]
   }
 }
 
 fn receiver_from_name(name: &str) -> Receiver {
   Receiver {
     name: name.to_owned(),
-    module_index: -1,
-    sender_index: -1
+    // These values will be replaced by
+    // true ones
+    module_index: 0,
+    sender_index: 0
   }
 }
 
-fn get_receiver_name(receiver: &Receiver) -> String {
-  return receiver.name.clone();
+fn describe_receiver(receiver: &Receiver) {
+  println!("Receiver Name: {} Module Index: {} Sender Index: {}", receiver.name, receiver.module_index, receiver.sender_index);
 }
