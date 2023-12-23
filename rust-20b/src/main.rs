@@ -1,4 +1,5 @@
 use std::fs::read_to_string;
+use std::collections::HashMap;
 use regex::Regex;
 
 const BROADCASTER: i32 = 1;
@@ -52,31 +53,41 @@ fn main() {
 
   modules.append(&mut newModules);
 
-  let mut i = 0;
-  while i < modules.len() {
-    let mut j = 0;
-    while j < modules.len() {
-      if i == j {
-        continue;
+  for m in modules.iter() {
+    for m2 in modules.iter_mut() {
+      if m.receivers.iter().any(|r| r.name == m2.name) {
+        m2.received.push(false)
       }
-      let m = &mut modules[i];
-      let m2 = &mut modules[j];
-      let receiver = m.receivers.iter_mut().find(|r| r.name == m2.name);
-      match receiver {
-        Some(receiver) => {
-          receiver.module_index = j;
-          m2.received.push(false);
-          receiver.sender_index = m2.received.len() - 1;
-        },
-        None => panic!("Unable to find receiver")
-      };
-      j = j + 1;
     }
-    i = i + 1;
+  }
+
+  let receiverCounts = HashMap<String, int32>::new();
+  for m in modules.iter() {
+    receiverCounts.insert(m.name, 0);
+  }
+
+  for m in modules.iter_mut() {
+    let n = 0;
+    for m2 in modules.iter() {
+      if m.receivers.iter().any(|r| r.name == m2.name) {
+        let receiver = m.receivers.iter_mut().find(|r| r.name == m2.name);
+        match receiver {
+          Some(receiver) => {
+            let si = receiverCounts.get(m2.name);
+            receiverCounts.set(m2.name, si + 1);
+            receiver.module_index = n;
+            receiver.sender_index = si;
+          },
+          None => panic!("Unable to find receiver")
+        };
+      }
+      n++;
+    }
   }
 
   for module in modules.iter() {
-    println!("Module Name: {} Type: {}",
+    println!(
+      "Module Name: {} Type: {}",
       module.name,
       module.t
     );
