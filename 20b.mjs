@@ -85,6 +85,8 @@ function solve() {
   while (true) {
     if (!(i % 1000000)) {
       console.log(i);
+      console.log(sentLow, sentHigh);
+      process.exit(1);
     }
     i++;
 
