@@ -1,6 +1,7 @@
 use std::fs::read_to_string;
 use std::collections::HashMap;
 use regex::Regex;
+use std::collections::VecDeque;
 
 const BROADCASTER: i32 = 1;
 const FLIPFLOP: i32 = 2;
@@ -17,8 +18,16 @@ struct Receiver {
 struct Module {
   name: String,
   t: i32,
+  state: bool,
   receivers: Vec<Receiver>,
   received: Vec<bool>
+}
+
+#[derive(Clone)]
+struct Pulse {
+  dest_index: usize,
+  value: bool,
+  sender_index: usize
 }
 
 fn read_lines(filename: &str) -> Vec<String> {
@@ -30,12 +39,15 @@ fn read_lines(filename: &str) -> Vec<String> {
 }
 
 fn main() {
+
   let mut lines = read_lines("/dev/stdin");
   lines.push("button -> broadcaster".to_owned());
+
   let mut modules: Vec<Module> = lines
     .iter()
     .map(parse_module)
     .collect();
+
   let mut new_modules: Vec<Module> = vec![];
 
   for m in modules.iter() {
@@ -46,7 +58,8 @@ fn main() {
           name: r.name.clone(),
           t: BROADCASTER,
           receivers: vec![],
-          received: vec![]
+          received: vec![],
+          state: false
         };
         new_modules.push(m2);
       }
@@ -103,6 +116,82 @@ fn main() {
       describe_receiver(&receiver);
     }
   }
+  
+  println!("Final result: {}", solve(&mut modules));  
+}
+
+fn solve(modules: &mut Vec<Module>) -> i64 {
+  let mut sent_high = 0;
+  let mut sent_low = 0;
+
+  let mut i: i64 = 1;
+
+  let mut pulses: VecDeque<Pulse> = VecDeque::new();
+
+  loop {
+    if (i % 1000000) == 0 {
+      println!("{}", i);
+      println!("{} {}", sent_low, sent_high);
+      panic!("stop");
+    }
+    i += 1;
+
+    let button = modules.iter().find(|m| m.name == "button");
+    match button {
+      Some(button) => {
+        send(&mut pulses, &button, false);
+      },
+      None => {
+        panic!("button module not found");
+      }
+    };
+    while pulses.len() > 0 {
+      let pulse = pulses.pop_front();
+      match pulse {
+        Some(pulse) => {
+          let m = &mut modules[pulse.dest_index];
+          let value = pulse.value;
+          if value {
+            sent_high += 1;
+          } else {
+            sent_low += 1;
+          }
+          if (m.name == "rx") && !pulse.value {
+            return i;
+          }
+          if m.t == BROADCASTER {
+            send(&mut pulses, &m, value);
+          } else if m.t == FLIPFLOP {
+            if !value {
+              m.state = !m.state;
+              send(&mut pulses, &m, m.state);
+            }
+          } else if m.t == CONJUNCTION {
+            let mut next = false;
+            m.received[pulse.sender_index] = pulse.value;
+            if m.received.iter().any(|v|!v) {
+              next = true;
+            }
+            send(&mut pulses, &m, next);
+          }    
+        },
+        None => {
+          panic!("Unexpectedly empty queue");
+        }
+      }
+    }
+  }
+}
+
+fn send(pulses: &mut VecDeque<Pulse>, m: &Module, value: bool) {
+  for receiver in m.receivers.iter() {
+    let pulse = Pulse {
+      dest_index: receiver.module_index,
+      value,
+      sender_index: receiver.sender_index
+    };
+    pulses.push_back(pulse);
+  }
 }
 
 fn parse_module(line: &String) -> Module {
@@ -125,7 +214,8 @@ fn parse_module(line: &String) -> Module {
     name: caps["name"].to_owned(),
     t,
     receivers,
-    received: vec![]
+    received: vec![],
+    state: false
   }
 }
 
