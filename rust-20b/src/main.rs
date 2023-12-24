@@ -121,8 +121,8 @@ fn main() {
 }
 
 fn solve(modules: &mut Vec<Module>) -> i64 {
-  let mut sent_high = 0;
-  let mut sent_low = 0;
+  let mut sent_high: i64 = 0;
+  let mut sent_low: i64 = 0;
 
   let mut i: i64 = 1;
 
@@ -132,7 +132,6 @@ fn solve(modules: &mut Vec<Module>) -> i64 {
     if (i % 1000000) == 0 {
       println!("{}", i);
       println!("{} {}", sent_low, sent_high);
-      panic!("stop");
     }
     i += 1;
 
