@@ -23,6 +23,30 @@ for (const m of list) {
     }
   }
 }
+
+// Shows that every node is involved in rx, and also
+// we have cycles
+
+// const rx = list.find(m => m.name === 'rx');
+// findLinks(rx);
+// for (const m of list) {
+//   console.log(`${m.name}: ${m.inputs ? m.inputs.join(', ') : 'NO'}`);
+// }
+// process.exit(0);
+
+// function findLinks(m) {
+//   const inputs = list.filter(m2 => m2.dest.includes(m.name));
+//   m.inputs = inputs.map(m2 => m2.name);
+//   for (const m2 of inputs) {
+//     if (m2.inputs) {
+//       console.log(`Cycle at ${m2.name}`);
+//       continue;
+//     }
+//     findLinks(m2);
+//   }
+// }
+
+
 for (const m of list) {
   m.received = [];
 }
@@ -33,7 +57,6 @@ for (const m of list) {
     return [ m2, m2.received.length - 1 ];
   });
 }
-console.log(list);
 
 // LESSON: there's a ton of back propagation, the
 // quest for isolated "machines" would be difficult.
