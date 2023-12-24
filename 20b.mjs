@@ -7,8 +7,8 @@ const list = lines.map(parseModule);
 const button = {
   name: 'button',
   type: '',
-  dest: [ 'broadcaster' ]
-  // layer: 0
+  dest: [ 'broadcaster' ],
+  layer: 0
 };
 list.push(button);
 for (const m of list) {
@@ -24,6 +24,49 @@ for (const m of list) {
   }
 }
 for (const m of list) {
+  m.senders = [];
+  for (const m2 of list) {
+    if (m2.dest.includes(m.name)) {
+      m.senders.push(m2.name);
+    }
+  }
+}
+
+const stateVars = list.map(m => {
+  if (m.type === '&') {
+    return m.senders.map(sender, `  let ${m.name}_from_${sender} = false;
+    `).join('\n');
+  } else if (m.type === '%') {
+    return `  ${m.name}_state = false;`;
+  } else {
+    // Broadcasters have no state variables
+  }
+});
+
+const innerLoop = list.map(m => {
+  if (m.type === '&') {
+    return `let ${m.name}_send = true;\nlet ${m.name}send_value = ${conditions.join(' && ')};`;
+  } else if (m.type === '%') {
+
+  }
+})
+
+fstat.writeFileSync('20b-compiled.js', `
+let i = 0;
+let finished = false;
+${stateVars}
+while (!finished) {
+  if (!(i % 1000000)) {
+    console.log(i);
+  }
+  i++;
+  ${innerLoop}
+}  
+console.log(finished);
+`);
+
+
+for (const m of list) {
   m.received = [];
 }
 for (const m of list) {
@@ -33,7 +76,6 @@ for (const m of list) {
     return [ m2, m2.received.length - 1 ];
   });
 }
-console.log(list);
 
 // LESSON: there's a ton of back propagation, the
 // quest for isolated "machines" would be difficult.
@@ -56,34 +98,28 @@ console.log(list);
 // that is *less than* or *equal to* the current
 // layer number then we have back propagation ):
 
-// findLayers(modules.get('button'));
-// console.log('layer check complete');
-// console.log(Math.max(...list.map(m => m.layer || 0)));
-
-// function findLayers(m) {
-//   for (const name of m.dest) {
-//     let m2 = modules.get(name);
-//     if (!m2) {
-//       // Because he likes to introduce unregistered
-//       // modules at random I guess
-//       m2 = {
-//         name,
-//         type: '',
-//         dest: []
-//       };
-//       modules.set(name, m2);
-//     }
-//     if (m2.layer !== undefined) {
-//       if (m2.layer < (m.layer + 1)) {
-//         console.log(`Back propagation: ${m.name} ${m.layer} cycles back to ${m2.name} ${m2.layer}`);
-//         continue;
-//       }
-//     } else {
-//       m2.layer = m.layer + 1;
-//     }
-//     findLayers(m2);
-//   }
-// }
+const modules = new Map();
+for (const module of list) {
+  modules.set(module.name, module);
+}
+findLayers(modules.get('button'));
+console.log('layer check complete');
+console.log(Math.max(...list.map(m => m.layer || 0)));
+console.log(modules.get('rx').layer);
+process.exit(1);
+function findLayers(m) {
+  for (const [ m2, i ] of m.dest) {
+    if (m2.layer !== undefined) {
+      if (m2.layer < (m.layer + 1)) {
+        console.log(`Back propagation: ${m.name} ${m.layer} cycles back to ${m2.name} ${m2.layer}`);
+        continue;
+      }
+    } else {
+      m2.layer = m.layer + 1;
+    }
+    findLayers(m2);
+  }
+}
 
 let sentHigh = 0;
 let sentLow = 0;
