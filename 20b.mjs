@@ -92,12 +92,10 @@ let pulses;
 console.log(solve());
 
 function solve() {
-  let i = 1;
+  let i = 0;
   while (true) {
     if (!(i % 1000000)) {
       console.log(i);
-      console.log(sentLow, sentHigh);
-      process.exit(0);
     }
     i++;
 
