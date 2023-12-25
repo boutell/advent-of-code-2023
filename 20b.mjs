@@ -46,9 +46,12 @@ for (const m of list) {
 //   }
 // }
 
+const feedsRx = list.filter(m => m.dest.includes('rx')).map(m => m.name);
+const feedsRx2 = list.filter(m => m.dest.find(d => feedsRx.includes(d))).map(m => m.name);
 
 for (const m of list) {
   m.received = [];
+  m.last = false;
 }
 for (const m of list) {
   m.dest = m.dest.map(name => list.find(m => m.name === name));
@@ -151,6 +154,12 @@ function solve() {
         if (m.received.includes(false)) {
           next = true;
         }
+        if (!next) {
+          if (feedsRx2.includes(m.name)) {
+            console.log(`${m.name} ${i - m.last}`);
+            m.last = i;
+          }
+        }      
         send(m, next);
       }
     }

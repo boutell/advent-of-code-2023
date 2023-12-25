@@ -32,7 +32,7 @@ let sentLow = 0;
 
 let pulses;
 
-for (let i = 0; (i < 1000); i++) {
+for (let i = 1; (i <= 1000); i++) {
 
   pulses = [];
 
@@ -40,9 +40,7 @@ for (let i = 0; (i < 1000); i++) {
   
   while (pulses.length > 0) {
     const pulse = pulses.shift();
-    console.log(pulse);
     const sender = pulse.sender;
-    console.log('>>', pulse);
     let m = modules.get(pulse.dest);
     if (!m) {
       // Because he likes to introduce unregistered
