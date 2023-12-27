@@ -161,8 +161,8 @@ function countGridBody(edges, isOdd) {
   grid2.shortestPath(({ v }) => v === '.');
   let count = 0;
   for (const cell of grid2.cells()) {
-    if (cell.value.d <= remainder) {
-      if ((isOdd && (cell.value.d % 1)) || !(cell.value.d % 1)) {
+    if (cell.value.d <= 130) {
+      if ((isOdd && !cell.value.fake && (cell.value.d % 1)) || !(cell.value.d % 1)) {
         count++;
       }
     }
@@ -180,3 +180,5 @@ function populateGrid(grid) {
 }
 
 // Too high: 608153747386143
+
+// Still too high: 608156802131305
